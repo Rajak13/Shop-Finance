@@ -68,7 +68,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      // Check if response is ok
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('JSON parsing error:', parseError);
+        return { 
+          success: false, 
+          error: 'Invalid response from server. Please try again.' 
+        };
+      }
 
       if (data.success && data.user) {
         setUser(data.user);
@@ -83,7 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Login error:', error);
       return { 
         success: false, 
-        error: 'Network error. Please try again.' 
+        error: error instanceof Error ? error.message : 'Network error. Please try again.' 
       };
     }
   };

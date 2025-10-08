@@ -6,12 +6,25 @@ import { LoginRequest, AuthResponse } from '../../../../types';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { Types } from 'mongoose';
+
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
-    const body: LoginRequest = await request.json();
+    // Parse request body with error handling
+    let body: LoginRequest;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      return NextResponse.json<AuthResponse>({
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'Invalid JSON in request body'
+        }
+      }, { status: 400 });
+    }
+
     const { email, password } = body;
 
     // Validate input
@@ -25,15 +38,15 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check for specific admin credentials
-    if (email !== 'admin@gmail.com') {
+    // Validate email format
+    if (!email.includes('@')) {
       return NextResponse.json<AuthResponse>({
         success: false,
         error: {
-          code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password'
+          code: 'VALIDATION_ERROR',
+          message: 'Please enter a valid email address'
         }
-      }, { status: 401 });
+      }, { status: 400 });
     }
 
     let user;

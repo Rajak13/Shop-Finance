@@ -13,9 +13,20 @@ interface SessionResponse extends APIResponse {
 
 export async function GET() {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    // Get token from cookies with error handling
+    let cookieStore;
+    let token;
+    
+    try {
+      cookieStore = await cookies();
+      token = cookieStore.get('auth-token')?.value;
+    } catch (cookieError) {
+      console.error('Cookie access error:', cookieError);
+      return NextResponse.json<SessionResponse>({
+        success: true,
+        authenticated: false
+      });
+    }
 
     if (!token) {
       return NextResponse.json<SessionResponse>({

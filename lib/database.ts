@@ -49,9 +49,10 @@ async function connectToDatabase(): Promise<void> {
     // Connect to MongoDB with optimized settings for production
     const db = await mongoose.connect(mongoUri, {
       // Connection pool settings
-      maxPoolSize: 10, // Maintain up to 10 socket connections
-      serverSelectionTimeoutMS: 30000, // Increased timeout for Atlas
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      maxPoolSize: 5, // Reduce pool size for better resource management
+      serverSelectionTimeoutMS: 10000, // Reduced timeout to fail faster
+      socketTimeoutMS: 20000, // Reduced socket timeout
+      connectTimeoutMS: 10000, // Connection timeout
       bufferCommands: true, // Enable buffering to handle connection delays
       retryWrites: true, // Enable retryable writes
       w: 'majority', // Write concern

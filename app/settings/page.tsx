@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../../lib/components/layout';
 import { ProtectedRoute } from '../../lib/components/auth/ProtectedRoute';
 import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '../../lib/components/ui';
@@ -19,12 +19,36 @@ import {
   Save
 } from 'lucide-react';
 
+// Client-only theme wrapper to avoid SSR issues
+function ThemeSettings() {
+  const { theme, toggleTheme } = useTheme();
+  
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="font-medium">Theme</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Choose your preferred theme
+        </p>
+      </div>
+      <Button onClick={toggleTheme} variant="outline">
+        {theme === 'light' ? 'Switch to Dark' : 'Switch to Light'}
+      </Button>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before rendering theme-dependent content
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Profile settings
   const [profileData, setProfileData] = useState({
@@ -227,17 +251,7 @@ export default function SettingsPage() {
                     <CardTitle>Appearance Settings</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">Theme</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Choose your preferred theme
-                        </p>
-                      </div>
-                      <Button onClick={toggleTheme} variant="outline">
-                        {theme === 'light' ? 'Switch to Dark' : 'Switch to Light'}
-                      </Button>
-                    </div>
+                    {mounted && <ThemeSettings />}
 
                     <div>
                       <label className="block text-sm font-medium mb-2">Currency</label>

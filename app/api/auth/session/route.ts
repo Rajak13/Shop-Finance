@@ -54,8 +54,8 @@ export async function GET() {
 
     let user;
     
-    // Try database connection, fallback to in-memory data if needed
-    if (shouldUseFallback()) {
+    // Check if this is a fallback user token or if we should use fallback
+    if (decoded.isFallback || shouldUseFallback()) {
       console.log('Using fallback data for session validation');
       user = fallbackUserOps.findById(decoded.userId);
       if (user) {
@@ -65,24 +65,24 @@ export async function GET() {
       }
     } else {
       try {
-        // Check if this is a fallback user token
-        if (decoded.isFallback) {
-          throw new Error('Fallback user token, use fallback data');
-        }
-        
         // Connect to database and fetch user
         await connectToDatabase();
         
-        // Validate ObjectId format
+        // Validate ObjectId format for MongoDB
         if (typeof decoded.userId === 'string' && decoded.userId.length === 24 && /^[0-9a-fA-F]{24}$/.test(decoded.userId)) {
           const dbUser = await User.findById(decoded.userId).select('-password');
           user = dbUser?.toJSON();
         } else {
           // Invalid ObjectId format, use fallback
-          throw new Error('Invalid user ID format');
+          throw new Error('Invalid user ID format - not a valid MongoDB ObjectId');
         }
       } catch (dbError) {
         console.error('Database connection failed, using fallback:', dbError);
+        // Enable fallback mode for subsequent requests
+        const { enableFallback } = await import('../../../../lib/fallback-data');
+        enableFallback();
+        
+        // Try to find user in fallback data
         user = fallbackUserOps.findById(decoded.userId);
         if (user) {
           const { password, ...userWithoutPassword } = user;

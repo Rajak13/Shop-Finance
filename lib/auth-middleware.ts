@@ -69,9 +69,27 @@ export function withAuth(
         return handler(request as AuthenticatedRequest);
       }
 
-      // Connect to database and fetch user
-      await connectToDatabase();
-      const user = await User.findById(decoded.userId).select('-password');
+      let user;
+      
+      try {
+        // Connect to database and fetch user
+        await connectToDatabase();
+        user = await User.findById(decoded.userId).select('-password');
+      } catch (dbError) {
+        console.error('Database connection failed in auth middleware:', dbError);
+        // If database fails, we can't validate the user, so reject the request
+        if (options.requireAuth) {
+          return NextResponse.json<APIResponse>({
+            success: false,
+            error: {
+              code: 'DATABASE_ERROR',
+              message: 'Authentication service temporarily unavailable'
+            }
+          }, { status: 503 });
+        }
+        // If auth is not required, continue without user
+        return handler(request as AuthenticatedRequest);
+      }
 
       if (!user) {
         if (options.requireAuth) {

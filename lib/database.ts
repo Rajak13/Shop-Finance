@@ -25,38 +25,20 @@ async function connectToDatabase(): Promise<void> {
     const mongoUri = process.env.MONGODB_URI;
     
     if (!mongoUri) {
-      console.warn('MONGODB_URI is not defined. Using fallback local MongoDB.');
-      // Fallback to local MongoDB for development
-      const fallbackUri = 'mongodb://localhost:27017/shabnam-transactions';
-      
-      try {
-        const db = await mongoose.connect(fallbackUri, {
-          maxPoolSize: 10,
-          serverSelectionTimeoutMS: 3000,
-          socketTimeoutMS: 45000,
-          bufferCommands: true, // Enable buffering for local development
-        });
-        
-        connection.isConnected = db.connections[0].readyState;
-        console.log('Connected to local MongoDB successfully');
-        return;
-      } catch (localError) {
-        console.error('Local MongoDB connection also failed:', localError);
-        throw new Error('No database connection available. Please configure MONGODB_URI or start local MongoDB.');
-      }
+      console.warn('MONGODB_URI is not defined. Database operations will use fallback data.');
+      throw new Error('MONGODB_URI not configured');
     }
 
     // Connect to MongoDB with optimized settings for production
     const db = await mongoose.connect(mongoUri, {
       // Connection pool settings
-      maxPoolSize: 5, // Reduce pool size for better resource management
-      serverSelectionTimeoutMS: 10000, // Reduced timeout to fail faster
-      socketTimeoutMS: 20000, // Reduced socket timeout
-      connectTimeoutMS: 10000, // Connection timeout
-      bufferCommands: true, // Enable buffering to handle connection delays
+      maxPoolSize: 10, // Connection pool size
+      serverSelectionTimeoutMS: 5000, // How long to try selecting a server
+      socketTimeoutMS: 45000, // How long a send or receive on a socket can take
+      connectTimeoutMS: 10000, // How long to wait for initial connection
+      bufferCommands: false, // Disable mongoose buffering
       retryWrites: true, // Enable retryable writes
       w: 'majority', // Write concern
-      // Remove ssl and authSource as they're handled by the connection string
     });
 
     connection.isConnected = db.connections[0].readyState;
@@ -64,16 +46,18 @@ async function connectToDatabase(): Promise<void> {
   } catch (error) {
     console.error('Database connection failed:', error);
     
-    // Provide more specific error messages
+    // Provide more specific error messages and always throw to trigger fallback
     if (error instanceof Error) {
       if (error.message.includes('ECONNREFUSED')) {
         throw new Error('Unable to connect to MongoDB. Please ensure MongoDB is running.');
       } else if (error.message.includes('authentication failed')) {
         throw new Error('MongoDB authentication failed. Please check your credentials.');
-      } else if (error.message.includes('IP whitelist') || error.message.includes('not authorized')) {
+      } else if (error.message.includes('IP whitelist') || error.message.includes('not authorized') || error.message.includes('not whitelisted')) {
         throw new Error('IP address not whitelisted. Please add your IP to MongoDB Atlas whitelist.');
-      } else if (error.message.includes('SSL') || error.message.includes('TLS')) {
+      } else if (error.message.includes('SSL') || error.message.includes('TLS') || error.message.includes('tlsv1 alert internal error')) {
         throw new Error('SSL/TLS connection error. Please check your MongoDB Atlas configuration.');
+      } else if (error.message.includes('MongoServerSelectionError')) {
+        throw new Error('Could not connect to MongoDB Atlas. Please check your connection string and network access.');
       }
     }
     

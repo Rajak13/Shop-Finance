@@ -284,8 +284,28 @@ export const fallbackAnalyticsOps = {
   }
 };
 
+// Global fallback state
+let useFallback = false;
+
 // Check if we should use fallback data
 export function shouldUseFallback(): boolean {
-  // Only use fallback if MongoDB URI is not available
-  return !process.env.MONGODB_URI;
+  // Use fallback if explicitly set or if MongoDB URI is not available
+  return useFallback || !process.env.MONGODB_URI;
+}
+
+// Force fallback mode (useful when database connection fails)
+export function enableFallback(): void {
+  useFallback = true;
+  console.log('Fallback mode enabled');
+}
+
+// Disable fallback mode
+export function disableFallback(): void {
+  useFallback = false;
+  console.log('Fallback mode disabled');
+}
+
+// Reset fallback state
+export function resetFallback(): void {
+  useFallback = false;
 }

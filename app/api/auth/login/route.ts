@@ -51,10 +51,12 @@ export async function POST(request: NextRequest) {
 
     let user;
     let isPasswordValid = false;
+    let usingFallback = false;
 
     // Try database connection, fallback to in-memory data if needed
     if (shouldUseFallback()) {
       console.log('Using fallback data for login');
+      usingFallback = true;
       user = fallbackUserOps.findByEmail(email);
       if (user) {
         // For fallback, check password directly (in real app, this would be hashed)
@@ -74,6 +76,11 @@ export async function POST(request: NextRequest) {
         }
       } catch (dbError) {
         console.error('Database connection failed, using fallback:', dbError);
+        // Enable fallback mode for subsequent requests
+        const { enableFallback } = await import('../../../../lib/fallback-data');
+        enableFallback();
+        
+        usingFallback = true;
         user = fallbackUserOps.findByEmail(email);
         if (user) {
           isPasswordValid = password === 'shabnam123@' || await bcrypt.compare(password, user.password);
@@ -99,7 +106,7 @@ export async function POST(request: NextRequest) {
         userId: String(user._id),
         email: user.email,
         role: user.role,
-        isFallback: shouldUseFallback() // Flag to indicate if this is a fallback user
+        isFallback: usingFallback // Flag to indicate if this is a fallback user
       },
       sessionSecret,
       {

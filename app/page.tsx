@@ -1,103 +1,360 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { DashboardLayout, PageHeader, Grid } from '../lib/components/layout';
+import { ProtectedRoute } from '../lib/components/auth/ProtectedRoute';
+import {
+  Button,
+  Input,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from '../lib/components/ui';
+import { TransactionForm } from '../lib/components/transactions/TransactionForm';
+import { useData } from '../lib/contexts/DataContext';
+import { Plus, Search, Edit, Trash2, TrendingUp, TrendingDown, Package, ShoppingCart, Activity, RefreshCw } from 'lucide-react';
+import { Transaction, TransactionFormData, APIResponse } from '../types';
+import { clsx } from 'clsx';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const {
+    transactions,
+    dashboardStats,
+    transactionsLoading,
+    statsLoading,
+    refreshAll,
+    addTransaction,
+    removeTransaction
+  } = useData();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Refresh data
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshAll();
+    setRefreshing(false);
+  };
+
+  // Handle transaction form submission
+  const handleTransactionSubmit = async (data: TransactionFormData) => {
+    try {
+      setFormLoading(true);
+
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result: APIResponse<Transaction> = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Failed to create transaction');
+      }
+
+      // Add transaction to context for immediate UI update
+      if (result.data) {
+        addTransaction(result.data);
+      }
+      setIsModalOpen(false);
+
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      throw error;
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Handle transaction deletion
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!confirm('Are you sure you want to delete this transaction?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'DELETE',
+      });
+
+      const result: APIResponse = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Failed to delete transaction');
+      }
+
+      // Remove transaction from context for immediate UI update
+      removeTransaction(transactionId);
+
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      setError('Failed to delete transaction');
+    }
+  };
+
+  // Filter transactions based on search (show only first 5 for dashboard)
+  const filteredTransactions = transactions
+    .filter(transaction => {
+      if (!searchTerm) return true;
+      
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        transaction.type.toLowerCase().includes(searchLower) ||
+        transaction.totalAmount.toString().includes(searchLower) ||
+        (transaction.supplier?.name?.toLowerCase().includes(searchLower)) ||
+        (transaction.customer?.name?.toLowerCase().includes(searchLower)) ||
+        transaction.items.some(item => item.itemName.toLowerCase().includes(searchLower))
+      );
+    })
+    .slice(0, 5); // Show only first 5 transactions on dashboard
+
+  // Load data on component mount
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
+
+  return (
+    <ProtectedRoute>
+      <DashboardLayout title="Dashboard">
+        <PageHeader
+          title="Welcome to Shabnam Collections"
+          subtitle="Manage your kurti shop transactions efficiently"
+          action={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                size="sm"
+              >
+                <RefreshCw size={16} className={clsx("mr-2", refreshing && "animate-spin")} />
+                Refresh
+              </Button>
+              <Button
+                variant="accent-gold"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <Plus size={16} className="mr-2" />
+                Add Transaction
+              </Button>
+            </div>
+          }
+        />
+
+        {/* Error Message */}
+        {error && (
+          <Card className="mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+            <CardContent className="p-4">
+              <p className="text-red-600 dark:text-red-400">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* KPI Cards */}
+        <Grid cols={4} gap={4} className="mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <ShoppingCart className="h-8 w-8 text-[var(--color-accent-gold)]" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                    Total Sales
+                  </p>
+                  <p className="text-2xl font-bold text-[var(--color-accent-gold)]">
+                    {statsLoading ? '...' : `NPR ${dashboardStats.totalSales.toFixed(2)}`}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Package className="h-8 w-8 text-[var(--color-accent-rust)]" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                    Total Purchases
+                  </p>
+                  <p className="text-2xl font-bold text-[var(--color-accent-rust)]">
+                    {statsLoading ? '...' : `NPR ${dashboardStats.totalPurchases.toFixed(2)}`}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className={clsx(
+                    'h-8 w-8 flex items-center justify-center rounded-full',
+                    dashboardStats.profit >= 0 
+                      ? 'bg-green-100 text-green-600' 
+                      : 'bg-red-100 text-red-600'
+                  )}>
+                    {dashboardStats.profit >= 0 ? (
+                      <TrendingUp className="h-5 w-5" />
+                    ) : (
+                      <TrendingDown className="h-5 w-5" />
+                    )}
+                  </div>
+                </div>
+                <div className="ml-4 flex-1">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                    Net Profit
+                  </p>
+                  <p className={clsx(
+                    'text-2xl font-bold',
+                    dashboardStats.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                  )}>
+                    {statsLoading ? '...' : `NPR ${dashboardStats.profit.toFixed(2)}`}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Activity className="h-8 w-8 text-[var(--color-text-primary)]" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                    Transactions
+                  </p>
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)]">
+                    {statsLoading ? '...' : dashboardStats.transactionCount}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Recent Transactions */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <CardTitle>Recent Transactions</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Input
+                  placeholder="Search transactions..."
+                  leftIcon={<Search size={16} />}
+                  className="w-64"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {transactionsLoading ? (
+              <div className="p-8 text-center text-[var(--color-text-secondary)]">
+                Loading transactions...
+              </div>
+            ) : filteredTransactions.length === 0 ? (
+              <div className="p-8 text-center text-[var(--color-text-secondary)]">
+                {searchTerm ? 'No transactions found matching your search.' : 'No transactions yet. Create your first transaction!'}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Party</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map((transaction) => (
+                    <TableRow key={transaction._id.toString()}>
+                      <TableCell>
+                        <span className={clsx(
+                          'px-2 py-1 rounded-full text-xs font-medium',
+                          transaction.type === 'sale'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                        )}>
+                          {transaction.type === 'sale' ? 'Sale' : 'Purchase'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        NPR {transaction.totalAmount.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.type === 'sale' 
+                          ? (transaction.customer?.name || 'Walk-in Customer')
+                          : (transaction.supplier?.name || 'Unknown Supplier')
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-[var(--color-text-secondary)]">
+                          {transaction.items.length} item{transaction.items.length !== 1 ? 's' : ''}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.location.href = `/transactions?view=${transaction._id}`}
+                          >
+                            <Edit size={14} />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteTransaction(transaction._id.toString())}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Transaction Form Modal */}
+        <TransactionForm
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleTransactionSubmit}
+          mode="create"
+          loading={formLoading}
+        />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

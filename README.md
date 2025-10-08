@@ -1,36 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Shabnam Collections Transaction Management System
 
-## Getting Started
+A comprehensive transaction management system for Shabnam Collections, a kurti shop in Dharan, Nepal. Built with Next.js, TypeScript, MongoDB, and Tailwind CSS.
 
-First, run the development server:
+## Features
 
+- 🔐 Secure authentication system
+- 📊 Purchase and sales transaction management
+- 📈 Business analytics and reporting
+- 📱 **Mobile-optimized responsive design**
+- 🌙 Light/dark theme support
+- 📦 Inventory management with stock tracking
+- 📋 Export functionality for reports
+- 📲 **Progressive Web App (PWA) support**
+- 🔄 **Pull-to-refresh functionality**
+- 👆 **Touch-friendly interactions**
+- 📴 **Offline functionality with fallback data**
+
+## Tech Stack
+
+- **Frontend:** Next.js 15.5.4, React 19, TypeScript
+- **Styling:** Tailwind CSS 4
+- **Database:** MongoDB with Mongoose ODM
+- **Authentication:** Custom session-based authentication
+- **Charts:** Recharts for analytics visualization
+- **Icons:** Lucide React
+
+## Prerequisites
+
+- Node.js 18+ 
+- MongoDB (local or cloud instance)
+- npm or yarn
+
+## Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd shabnam-transactions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Update the environment variables in `.env.local`:
+```env
+MONGODB_URI=mongodb://localhost:27017/shabnam-transactions
+MONGODB_DB=shabnam-transactions
+NEXTAUTH_SECRET=your-secret-key-here
+NEXTAUTH_URL=http://localhost:3000
+SESSION_SECRET=your-session-secret-here
+NODE_ENV=development
+```
 
-## Learn More
+5. Start the development server:
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Default Login Credentials
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Email:** admin@gmail.com
+- **Password:** shabnam123@
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+shabnam-transactions/
+├── app/                    # Next.js app directory
+├── lib/                    # Utility functions and configurations
+│   ├── config.ts          # Environment configuration
+│   ├── constants.ts       # Application constants
+│   └── utils.ts           # Helper utilities
+├── types/                  # TypeScript type definitions
+│   └── index.ts           # Main type definitions
+├── .env.example           # Environment variables template
+└── .env.local            # Local environment variables (not committed)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Mobile & PWA Features
+
+### Mobile Optimizations
+- **Touch-friendly UI**: All interactive elements meet minimum 44px touch target requirements
+- **Mobile-first responsive design**: Optimized layouts for all screen sizes
+- **Bottom navigation**: Easy thumb-friendly navigation on mobile devices
+- **Pull-to-refresh**: Swipe down to refresh data on mobile
+- **Swipeable interactions**: Swipe gestures for enhanced mobile UX
+- **Safe area support**: Proper handling of device notches and home indicators
+
+### Progressive Web App (PWA)
+- **Installable**: Add to home screen on mobile devices
+- **Offline support**: Basic functionality works without internet connection
+- **Service worker**: Caches resources for faster loading
+- **App manifest**: Native app-like experience
+- **Background sync**: Sync data when connection is restored
+
+### Fallback System
+The application includes a robust fallback system for development:
+- **In-memory data store**: Works without database connection
+- **Automatic fallback**: Seamlessly switches to fallback when database is unavailable
+- **Development notices**: Clear indicators when running in fallback mode
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `MONGODB_URI` | MongoDB connection string | Yes |
+| `MONGODB_DB` | Database name | No (defaults to shabnam-transactions) |
+| `NEXTAUTH_SECRET` | Secret for authentication | Yes |
+| `NEXTAUTH_URL` | Application URL | No (defaults to localhost:3000) |
+| `SESSION_SECRET` | Secret for session management | Yes |
+| `NODE_ENV` | Environment (development/production) | No |
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## License
+
+This project is private and proprietary to Shabnam Collections.
